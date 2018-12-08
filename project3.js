@@ -135,11 +135,11 @@ function chooseBingoCard() {
   return card;
 }
 
-function showMultipleCards(playersAndCards) {
+function showMultipleCards(bingoPlayers) {
   let result = '';
-  for (let p = 0; p < playersAndCards.length; p++) { // Players
-    const singlePlayer = playersAndCards[p];
-    const { cards } = playersAndCards[p];
+  for (let p = 0; p < bingoPlayers.length; p++) { // Players
+    const singlePlayer = bingoPlayers[p];
+    const { cards } = bingoPlayers[p];
     result += `${singlePlayer.player.padEnd(22, '*')}\n`;
     for (let strLine = 0; strLine < numLines; strLine++) {
       for (let c = 0; c < singlePlayer.cards.length; c++) { // Every card in each player
@@ -161,6 +161,7 @@ function registerPlayersAndChooseCards(bingoPlayers) {
       player: name,
       cards: [],
       points: 0,
+      linesCompleted: [],
     };
     const numCards = Number.parseInt(prompt(`Hi, ${name}. How many cards do you want? `));
     for (let c = 0; c < numCards; c++) {
@@ -211,7 +212,33 @@ function singleCardGame() {
   console.log(`Bye ${name}`);
 }
 
-singleCardGame();
+function multiplePlayersGame() {
+  let bingoPlayers = [];
+  const goneNumbers = [];
+
+  registerPlayersAndChooseCards(bingoPlayers);
+  bingoCard.showPointSystem();
+  console.log("Let's play...");
+
+  let confirm = '';
+  const COMPLETED = 'completed';
+  while (confirm === COMPLETED || confirm === 'quit') {
+    let newNumber = getRandom();
+    while (goneNumbers.includes(newNumber)) {
+      newNumber = getRandom();
+    }
+
+    // TODO
+
+    if (confirm !== COMPLETED) {
+      confirm = prompt('Confirm to continue (quit to exit): ');
+    }
+  }
+
+}
+
+
+// singleCardGame();
 
 
 // dev****
