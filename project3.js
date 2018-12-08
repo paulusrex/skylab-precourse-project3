@@ -5,7 +5,7 @@ function getRandom() {
   return Math.ceil(Math.random() * 99);
 }
 
-class BingoCard {  
+class BingoCard {
   constructor() {
     this.columns = 5;
     this.lines = numLines;
@@ -35,7 +35,7 @@ class BingoCard {
     console.log(`${this.totalCardNumbers + 3} tries = 200 points`);
     console.log(`${this.totalCardNumbers + 4} tries = 150 points`);
     console.log(`>${this.totalCardNumbers + 5} tries = 100 points - 1 points extra try from ${this.totalCardNumbers + 6} No negative points.`);
-    console.log('Every line: +150 point')
+    console.log('Every line: +150 point');
   }
 
   points() {
@@ -125,13 +125,13 @@ function chooseBingoCard() {
     card = new BingoCard();
     card.show();
     let okCard;
-    do  {
+    do {
       okCard = prompt('Do you like this card? (y/n)');
     } while (!/^y|n$/i.test(okCard));
     if (okCard.toLowerCase() === 'n') {
       card = null;
     }
-  } 
+  }
   return card;
 }
 
@@ -140,12 +140,12 @@ function showMultipleCards(playersAndCards) {
   for (let p = 0; p < playersAndCards.length; p++) { // Players
     const singlePlayer = playersAndCards[p];
     const { cards } = playersAndCards[p];
-    result += singlePlayer.player.padEnd(22, '*') + '\n';
+    result += `${singlePlayer.player.padEnd(22, '*')}\n`;
     for (let strLine = 0; strLine < numLines; strLine++) {
       for (let c = 0; c < singlePlayer.cards.length; c++) { // Every card in each player
         const linesCard = cards[c].toStr().split('\n');
         result += linesCard[strLine].padEnd(22, ' ');
-      }  
+      }
       result += '\n';
     }
     result += '\n';
@@ -165,17 +165,18 @@ function registerPlayersAndChooseCards(bingoPlayers) {
     const numCards = Number.parseInt(prompt(`Hi, ${name}. How many cards do you want? `));
     for (let c = 0; c < numCards; c++) {
       player.cards.push(chooseBingoCard());
-    } 
+    }
     bingoPlayers.push(player);
   }
 }
 
 function singleCardGame() {
-  const name = prompt(`What's your name ? `);
+  const name = prompt('What\'s your name ? ');
   const bingoCard = chooseBingoCard();
-  console.log("Let's play...")
+  bingoCard.showPointSystem();
+  console.log("Let's play...");
 
-  let goneNumbers = [];
+  const goneNumbers = [];
   let linesCompleted = [];
 
   let confirm;
@@ -214,4 +215,7 @@ singleCardGame();
 
 
 // dev****
-// pc = [{ player:'pablo', cards: [new BingoCard(), new BingoCard()]}, {player:'pepe', cards: [new BingoCard(), new BingoCard()]}]
+/*
+pc = [{ player:'pablo', cards: [new BingoCard(), new BingoCard()]}, 
+{player:'pepe', cards: [new BingoCard(), new BingoCard()]}]
+*/
