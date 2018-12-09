@@ -275,7 +275,6 @@ function singleCardGame() {
   console.log(`>>> Points for ${name}: ${bingoCard.points()}`);
   console.log(`Bye ${name}`);
 }
-
 function multiplePlayersGame(players) {
   const goneNumbers = [];
 
@@ -318,7 +317,7 @@ function multiplePlayersGame(players) {
 
   const playersWon = [];
   console.log('POINT RESULTS AFTER THIS ROUND');
-  const table = [];
+  let table = [];
   players.forEach((player) => {
     if (player.someCompleted()) {
       playersWon.push(player.name);
@@ -335,8 +334,13 @@ function multiplePlayersGame(players) {
   } else {
     console.log(`ohhh, DRAW!!!!! ${playersWon.toString()} won this turn`);
   }
-  console.table(table.sort((player1, player2) => player2.points - player1.points));
+  table.sort((player1, player2) => player2.points - player1.points);
+  table = table.map((player, index) => {
+    return { ranking: index + 1, ...player }
+  });
+  console.table(table);
 }
+
 
 function bingoCasino() {
   const players = [];
