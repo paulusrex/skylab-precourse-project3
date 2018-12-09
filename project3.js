@@ -336,7 +336,7 @@ function multiplePlayersGame(players) {
   }
   table.sort((player1, player2) => player2.points - player1.points);
   table = table.map((player, index) => {
-    return { ranking: index + 1, ...player }
+    return { ranking: index + 1, ...player };
   });
   console.table(table);
 }
