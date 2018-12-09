@@ -1,16 +1,29 @@
 /* eslint-disable no-console */
 const numLines = 3;
+const numColumns = 5;
+const maxNumbers = 99;
 
-function getRandom() {
-  return Math.ceil(Math.random() * 99);
+function getRandom(goneNumbers) {
+  const generateRandom = () => Math.ceil(Math.random() * maxNumbers);
+  let newNumber = generateRandom();
+  if (goneNumbers !== undefined) {
+    while (goneNumbers.includes(newNumber)) {
+      newNumber = generateRandom();
+    }
+    goneNumbers.push(newNumber);
+  }
+  return newNumber;
 }
 
 class BingoCard {
   constructor() {
-    this.columns = 5;
+    this.NUMBER_MATCHED = 'number_matched';
+    this.LINE_COMPLETED = 'line_completed';
+    this.CARD_COMPLETED = 'card_completed';
+    this.columns = numColumns;
     this.lines = numLines;
     this.totalCardNumbers = this.columns * this.lines;
-    this.maxNumbers = 99;
+    this.maxNumbers = maxNumbers;
     this.tries = 0;
     this.cardNumbers = [];
     for (let i = 0; i < this.totalCardNumbers; i++) {
@@ -84,15 +97,25 @@ class BingoCard {
     return checkLines.filter(line => line);
   }
 
-  allCompleted() {
+  cardCompleted() {
     return this.cardNumbers.every(cardNumber => cardNumber.matched);
   }
 
-  mark(number) {
-    if (this.exist(number)) {
-      this.cardNumbers[this.findIndex(number)].matched = true;
-    }
+  mark(num) {
+    const oldLinesCompleted = this.linesCompleted().length;
     this.tries++;
+    if (this.exist(num)) {
+      this.cardNumbers[this.findIndex(num)].matched = true;
+      if (this.cardCompleted()) {
+        return this.CARD_COMPLETED;
+      }
+      const newLinesCompleted = this.linesCompleted().length;
+      if (oldLinesCompleted !== newLinesCompleted) {
+        return this.LINE_COMPLETED;
+      }
+      return this.NUMBER_MATCHED;
+    }
+    return false;
   }
 
   toStr(lastNumber) {
@@ -119,6 +142,43 @@ class BingoCard {
   }
 }
 
+class BingoPlayer {
+  constructor(name, cards) {
+    this.name = name;
+    this.cards = cards === undefined ? [] : cards;
+    this.points = 0;
+
+    this.NUMBER_MATCHED = 'number_matched';
+    this.LINE_COMPLETED = 'line_completed';
+    this.CARD_COMPLETED = 'card_completed';
+  }
+
+  mark(num) {
+    const cardEvents = {};
+    cardEvents[this.CARD_COMPLETED] = 0;
+    cardEvents[this.LINE_COMPLETED] = 0;
+    cardEvents[this.NUMBER_MATCHED] = 0;
+    this.cards.forEach((card) => {
+      const event = card.mark(num);
+      if (event) {
+        cardEvents[event]++;
+      }
+    });
+    return cardEvents;
+  }
+
+  someCompleted() {
+    return this.cards.some(card => card.cardCompleted());
+  }
+
+  totalizePointsAndReset() {
+    this.cards.forEach((card) => {
+      this.points += card.points();
+    });
+    this.cards = [];
+  }
+}
+
 function chooseBingoCard() {
   let card = null;
   while (card === null) {
@@ -127,7 +187,7 @@ function chooseBingoCard() {
     let okCard;
     do {
       okCard = prompt('Do you like this card? (y/n)');
-    } while (!/^y|n$/i.test(okCard));
+    } while (!/^(y|n)$/i.test(okCard));
     if (okCard.toLowerCase() === 'n') {
       card = null;
     }
@@ -135,15 +195,14 @@ function chooseBingoCard() {
   return card;
 }
 
-function showMultipleCards(bingoPlayers) {
+function showMultipleCards(bingoPlayers, newNumber) {
   let result = '';
   for (let p = 0; p < bingoPlayers.length; p++) { // Players
-    const singlePlayer = bingoPlayers[p];
-    const { cards } = bingoPlayers[p];
-    result += `${singlePlayer.player.padEnd(22, '*')}\n`;
+    const { name, cards } = bingoPlayers[p];
+    result += `${name.padEnd(22, '*')}\n`;
     for (let strLine = 0; strLine < numLines; strLine++) {
-      for (let c = 0; c < singlePlayer.cards.length; c++) { // Every card in each player
-        const linesCard = cards[c].toStr().split('\n');
+      for (let c = 0; c < cards.length; c++) { // Every card in each player
+        const linesCard = cards[c].toStr(newNumber).split('\n');
         result += linesCard[strLine].padEnd(22, ' ');
       }
       result += '\n';
@@ -153,25 +212,30 @@ function showMultipleCards(bingoPlayers) {
   return result;
 }
 
-function registerPlayersAndChooseCards(bingoPlayers) {
-  const numPlayers = Number.parseInt(prompt('How many players to add? '));
-  for (let p = 0; p < numPlayers; p++) {
-    const name = prompt(`What's your name (Player ${p})? `);
-    const player = {
-      player: name,
-      cards: [],
-      points: 0,
-      linesCompleted: [],
-    };
-    const numCards = Number.parseInt(prompt(`Hi, ${name}. How many cards do you want? `));
+function registerPlayersAndChooseCards(players, addNewPlayers) {
+  let numNewPlayers = 0;
+  if (addNewPlayers) {
+    numNewPlayers = Number.parseInt(prompt('How many players to add? '));
+  }
+  for (let i = 0; i < numNewPlayers; i++) {
+    const name = prompt(`What's your name (Player ${players.length + 1})? `);
+    players.push(new BingoPlayer(name));
+  }
+
+  for (let p = 0; p < players.length; p++) {
+    const { name, cards } = players[p];
+    let numCards;
+    do {
+      numCards = Number.parseInt(prompt(`Hi, ${name}. How many cards do you want? `));
+    } while (Number.isNaN(numCards));
     for (let c = 0; c < numCards; c++) {
-      player.cards.push(chooseBingoCard());
+      cards.push(chooseBingoCard());
     }
-    bingoPlayers.push(player);
   }
 }
 
 function singleCardGame() {
+  // First dev approach
   const name = prompt('What\'s your name ? ');
   const bingoCard = chooseBingoCard();
   bingoCard.showPointSystem();
@@ -181,7 +245,7 @@ function singleCardGame() {
   let linesCompleted = [];
 
   let confirm;
-  while (!bingoCard.allCompleted() || confirm === 'quit') {
+  while (!bingoCard.cardCompleted() || confirm === 'quit') {
     let newNumber = getRandom();
     while (goneNumbers.includes(newNumber)) {
       newNumber = getRandom();
@@ -191,7 +255,7 @@ function singleCardGame() {
     if (bingoCard.exist(newNumber)) {
       console.log(`${newNumber} --> Matched!!`);
       bingoCard.show(newNumber);
-      if (bingoCard.allCompleted()) {
+      if (bingoCard.cardCompleted()) {
         console.log('B-I-N-G-O!!!!!!!');
       } else {
         const statusLines = bingoCard.linesCompleted();
@@ -212,37 +276,89 @@ function singleCardGame() {
   console.log(`Bye ${name}`);
 }
 
-function multiplePlayersGame() {
-  let bingoPlayers = [];
+function multiplePlayersGame(players) {
   const goneNumbers = [];
 
-  registerPlayersAndChooseCards(bingoPlayers);
-  bingoCard.showPointSystem();
+  players[0].cards[0].showPointSystem();
+  console.log('Players and final cards');
+  console.log(showMultipleCards(players));
   console.log("Let's play...");
 
-  let confirm = '';
   const COMPLETED = 'completed';
-  while (confirm === COMPLETED || confirm === 'quit') {
-    let newNumber = getRandom();
-    while (goneNumbers.includes(newNumber)) {
-      newNumber = getRandom();
+  let confirm = '';
+  while (confirm !== COMPLETED && confirm !== 'quit') {
+    const newNumber = getRandom(goneNumbers);
+    let matched = false;
+    console.log(`New number: ${newNumber}`);
+    for (let p = 0; p < players.length; p++) {
+      const player = players[p];
+      const playerEvents = player.mark(newNumber);
+      if (playerEvents[player.CARD_COMPLETED] !== 0) {
+        console.log(`${player.name} BINGO!!!! `);
+        confirm = COMPLETED;
+        matched = true;
+      } else if (playerEvents[player.LINE_COMPLETED] !== 0) {
+        console.log(`${player.name} ${playerEvents[player.LINE_COMPLETED]} NEW LINE${playerEvents[player.LINE_COMPLETED] > 1 ? 'S' : ''}!! `);
+        matched = true;
+      } else if (playerEvents[player.NUMBER_MATCHED] !== 0) {
+        console.log(`${player.name} ${playerEvents[player.NUMBER_MATCHED]} card(s) with number matched`);
+        matched = true;
+      }
+    }
+    if (matched) {
+      console.log(showMultipleCards(players, newNumber));
+    } else {
+      console.log(`${newNumber} not matched`);
     }
 
-    // TODO
-
     if (confirm !== COMPLETED) {
-      confirm = prompt('Confirm to continue (quit to exit): ');
+      confirm = prompt('Confirm to continue (quit to exit): ').toLowerCase();
     }
   }
 
+  const playersWon = [];
+  console.log('POINT RESULTS AFTER THIS ROUND');
+  const table = [];
+  players.forEach((player) => {
+    if (player.someCompleted()) {
+      playersWon.push(player.name);
+    }
+    player.totalizePointsAndReset();
+    table.push({
+      name: player.name,
+      points: player.points,
+    });
+  });
+  console.log(`>>> total turns: ${goneNumbers.length}`);
+  if (playersWon.length === 1) {
+    console.log(`${playersWon[0]} won this turn`);
+  } else {
+    console.log(`ohhh, DRAW!!!!! ${playersWon.toString()} won this turn`);
+  }
+  console.table(table.sort((player1, player2) => player2.points - player1.points));
 }
 
+function bingoCasino() {
+  const players = [];
 
-// singleCardGame();
+  let newGame = 'add';
+  do {
+    registerPlayersAndChooseCards(players, newGame.toLowerCase() === 'add');
+    multiplePlayersGame(players);
+    do {
+      newGame = prompt('New game (y/n/add[ new players]) ');
+    } while (!/^(y|n|add)$/i.test(newGame));
+  } while (/^(y|add)$/i.test(newGame));
+  console.log('Ciao.');
+}
 
+bingoCasino();
 
 // dev****
-/*
-pc = [{ player:'pablo', cards: [new BingoCard(), new BingoCard()]}, 
-{player:'pepe', cards: [new BingoCard(), new BingoCard()]}]
-*/
+
+// multiplePlayersGame([
+//   new BingoPlayer('Pablo', [new BingoCard(), new BingoCard()]),
+//   new BingoPlayer('Paquito', [new BingoCard(), new BingoCard(), new BingoCard()]),
+// ]);
+
+// singleCardGame();
